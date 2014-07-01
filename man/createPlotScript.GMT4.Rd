@@ -1,0 +1,53 @@
+\name{createPlotScript.GMT4}
+\alias{createPlotScript.GMT4}
+\title{Creates a shell script for GMT 4.5 to plot a dataframe or csv file on a map.}
+\usage{
+createPlotScript.GMT4(z10 = 1, delx = 1, dely = 1, logtr = FALSE,
+  blocktype = c("MEAN", "SUM"), plt_blocktype = c("SMOOTH", "COARSE"),
+  plt_surface = FALSE, plt_bars = FALSE, plt_blocklocations = FALSE,
+  plt_stations = FALSE, plt_colorscale = FALSE, plt_reflines = FALSE,
+  plt_title = FALSE)
+}
+\arguments{
+  \item{z1}{= scale for z axis}
+
+  \item{delx}{= x increment for associated grids}
+
+  \item{dely}{= y increment for associated grids}
+
+  \item{logtr}{= flag to ln-transform z data}
+
+  \item{blocktype}{= flag ('MEAN' or 'SUM') for grouping
+  data}
+
+  \item{plt_blocktype}{= flag ('SMOOTH','COARSE') for
+  displaying surface}
+
+  \item{plt_surface}{= flag to plot data as a color density
+  image}
+
+  \item{plt_blocklocations}{= flag to plot block locations
+  as X's}
+
+  \item{plt_bars}{= flag to plot data as bars}
+
+  \item{plt_colorscale}{= flag to plot color scale}
+
+  \item{plt_reflines}{= flag to include refernce lines on
+  map}
+
+  \item{plt_title}{= flag to include title on map}
+}
+\value{
+GMT function script as character vector
+}
+\description{
+A function to create a shell script for GMT 4.5 to plot a
+dataframe or csv file on a map.
+}
+\details{
+
+
+External Requirements:\n --GMT 4.5.x
+}
+

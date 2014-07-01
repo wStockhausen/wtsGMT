@@ -31,7 +31,7 @@ gridCSV<-function(dfr=NULL,
                   blocktype='SUM',
                   tmpFile=file.path(getwd(),'tmpFile.csv'),
                   tmpData=file.path(getwd(),'tmpData.txt'),
-                  tmpGrid=file.path(getwd(),'tmpGrid.xyg'){
+                  tmpGrid=file.path(getwd(),'tmpGrid.xyg')){
   
     #check the operating platform
     MacOSX<-'MacOSX';

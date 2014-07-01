@@ -1,0 +1,11 @@
+Package: wtsGMT
+Type: Package
+Title: Functions for creating maps with GMT 4.5 (and maybe 5.1)
+Version: 1.0
+Date: 2014-07-01
+Author: William T. Stockhausen
+Maintainer: William T. Stockhausen <william.stockhausen@noaa.gov>
+Description: Provides a set of functions for creating maps with GMT.
+License: MIT
+Imports:
+    wtsUtilities

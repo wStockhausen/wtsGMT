@@ -1,4 +1,32 @@
-createPlotScript.MacOSX<-function(z10=1,
+#'
+#'@title Creates a shell script for GMT 4.5 to plot a dataframe or csv file on a map.
+#'
+#'@description A function to create a shell script for GMT 4.5 to plot a dataframe or csv file on a map.
+#'
+#'@details 
+#' External Requirements:\n
+#'   --GMT 5.1.x ---DOESN'T WORK!!
+#'
+#' @param   z1   = scale for z axis
+#' @param   delx = x increment for associated grids
+#' @param   dely = y increment for associated grids
+#' @param   logtr = flag to ln-transform z data
+#' @param   blocktype = flag ('MEAN' or 'SUM') for grouping data 
+#' @param   plt_blocktype = flag ('SMOOTH','COARSE') for displaying surface
+#' @param   plt_surface = flag to plot data as a color density image
+#' @param   plt_blocklocations = flag to plot block locations as X's
+#' @param   plt_bars = flag to plot data as bars
+#' @param   plt_colorscale = flag to plot color scale
+#' @param   plt_reflines = flag to include refernce lines on map
+#' @param   plt_title = flag to include title on map
+#'
+#' @return GMT function script as character vector
+#' 
+#' @importFrom wtsUtilities getCSV
+#' 
+#' @export
+#'
+createPlotScript.GMT5<-function(z10=1,
                                   logtr=FALSE,
                                   blocktype=c('MEAN','SMOOTH'),
                                   plt_blocktype=c('SMOOTH','COARSE'),

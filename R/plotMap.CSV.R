@@ -1,22 +1,48 @@
+#'
+#'@title Plots a dataframe or csv file on a map using GMT.
+#'
+#'@description A function to plot a dataframe or csv file on a map using GMT.
+#'
 #'@details 
 #' External Requirements:\n
+#'   --GMT 4.5.x
 #'   --need both gswin32c and gswin64c installed\n
 #'   --on network, need to use mapped drives to specify files
 #'
 #'
-#' @param   dfr       = standardized CPUE data table previously extracted
-#' @param   csvin     = csv file with catch previously extracted
+#' @param   dfr       = dataframe to plot
+#' @param   csvin     = csv file to plot
 #' @param   csvout    = output csv file for CPUE
+#' @param   lat = column name containing latitudes
+#' @param   lon = column name containing longitudes
+#' @param   col = name of column containing z data
+#' @param   gmt = GMT version (4 or 5)
+#' @param   label = map title
+#' @param   year = year label
+#' @param   xyrng = x-y range for map as GMT string ('xmin/xmax/ymin/ymax')
 #' @param   psFile    = filename for output EPS file (no extension--will be eps)
 #' @param   batchFile      = path to plotCatch.bat
 #' @param   bathymetryFile = filename of bathymetry to plot
 #' @param   epsToolFile    = filename of EPS Tool batch file
-#' @param   plt_title = include species name as title in plot
-#' @param   plt_bars  = plot CPUE as bars
-#' @param   plt_surf  = plot CPUE as color density
-#' @param   plt_clrbr = plot color bar
-#' @param   zscl      = z-scale
+#' @param   zscl      = z-scale (max) for map
+#' @param   ztype = label for z axes
+#' @param   zunits = units for z axes
+#' @param   delx = x increment for associated grids
+#' @param   dely = y increment for associated grids
+#' @param   logtr = flag to ln-transform z data
+#' @param   blocktype = flag ('MEAN' or 'SUM') for grouping data 
+#' @param   plt_blocktype = flag ('SMOOTH','COARSE') for displaying surface
+#' @param   plt_surface = flag to plot data as a color density image
+#' @param   plt_blocklocations = flag to plot block locations as X's
+#' @param   plt_bars = flag to plot data as bars
+#' @param   plt_colorscale = flag to plot color scale
+#' @param   plt_reflines = flag to include refernce lines on map
+#' @param   reflines = list of lists(lon=,lat=) of reference lines to plot
+#' @param   plt_title = flag to include title on map
 #' @param   showMap   = flag (T/F) to view EPS plots using GSView
+#' @param psFile = 
+#' @param pdfDir = 
+#' @param bathymetryfile = 
 #'
 #' @return z-scale used for plot.
 #' 
@@ -24,7 +50,6 @@
 #' 
 #' @export
 #'
-#source(file.path(Sys.getenv("R_SCRIPTS"),"Utilities/functionUtilities.R"),chdir=TRUE);
 plotMap.CSV<-function(dfr=NULL,
                       csvin=NULL,
                       lat='latitude',
@@ -41,9 +66,6 @@ plotMap.CSV<-function(dfr=NULL,
                       dely=0.25,
                       blocktype=c('MEAN','SUM'),
                       plt_blocktype=c('SMOOTH','COARSE'),
-                      psFile='catchMaps',
-                      pdfDir='',
-                      pdfFile='catchMaps',
                       logtr=FALSE,
                       rotate=FALSE,
                       plt_title=FALSE,
@@ -55,8 +77,9 @@ plotMap.CSV<-function(dfr=NULL,
                       plt_reflines=FALSE,
                       reflines=list(list(lon=-166+0*seq(from=50,to=80,by=1),lat=seq(from=50,to=80,by=1))),
                       showMap=FALSE,
+                      psFile='catchMaps',
+                      pdfDir='',
                       bathymetryFile=file.path(getwd(),'data/depthcontour_200500.prn'),
-                      epsToolFile=   file.path(getwd(),'runEPStool'),
                       debug=FALSE
                       ) {
     
@@ -256,11 +279,6 @@ plotMap.CSV<-function(dfr=NULL,
     
 #    file.remove(csvfile);
 #    file.remove(psf);
-    
-#     if (!is.null(pdfFile)) {
-#       readline(prompt="Creating pdf file. Hit return: \n")    
-#       createPDFfromEPS(pdfFile,epsf);
-#     }
     
     cat('\nzscale used for plots was ',zscl,'\n\n\n');
     return(zscl);

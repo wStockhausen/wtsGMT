@@ -1,16 +1,44 @@
+#'
+#'@title Creates a shell script for GMT 4.5 to plot a dataframe or csv file on a map.
+#'
+#'@description A function to create a shell script for GMT 4.5 to plot a dataframe or csv file on a map.
+#'
+#'@details 
+#' External Requirements:\n
+#'   --GMT 4.5.x
+#'
+#' @param   z1   = scale for z axis
+#' @param   delx = x increment for associated grids
+#' @param   dely = y increment for associated grids
+#' @param   logtr = flag to ln-transform z data
+#' @param   blocktype = flag ('MEAN' or 'SUM') for grouping data 
+#' @param   plt_blocktype = flag ('SMOOTH','COARSE') for displaying surface
+#' @param   plt_surface = flag to plot data as a color density image
+#' @param   plt_blocklocations = flag to plot block locations as X's
+#' @param   plt_bars = flag to plot data as bars
+#' @param   plt_colorscale = flag to plot color scale
+#' @param   plt_reflines = flag to include refernce lines on map
+#' @param   plt_title = flag to include title on map
+#'
+#' @return GMT function script as character vector
+#' 
+#' @importFrom wtsUtilities getCSV
+#' 
+#' @export
+#'
 createPlotScript.GMT4<-function(z10=1,
                                 delx=1,
                                 dely=1,
-                                  logtr=FALSE,
-                                  blocktype=c('MEAN','SMOOTH'),
-                                  plt_blocktype=c('SMOOTH','COARSE'),
-                                  plt_surface=FALSE,
-                                  plt_bars=FALSE,
-                                  plt_blocklocations=FALSE,
-                                  plt_stations=FALSE,
-                                  plt_colorscale=FALSE,
-                                  plt_reflines=FALSE,
-                                  plt_title=FALSE){
+                                logtr=FALSE,
+                                blocktype=c('MEAN','SUM'),
+                                plt_blocktype=c('SMOOTH','COARSE'),
+                                plt_surface=FALSE,
+                                plt_bars=FALSE,
+                                plt_blocklocations=FALSE,
+                                plt_stations=FALSE,
+                                plt_colorscale=FALSE,
+                                plt_reflines=FALSE,
+                                plt_title=FALSE){
     script<-'';
     #
     # GMT script to plot catch or CPUE for CRAB

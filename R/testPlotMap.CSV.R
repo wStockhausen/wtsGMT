@@ -1,3 +1,5 @@
+#'
+#'
 res<-plotMap.CSV(psFile='tstRotFALSE',showMap=TRUE,year=2009,col='legalret',label="legal, retained",rotate=FALSE,
                  blocktype='SUM',plt_blocktype='COARSE',
                 plt_title=TRUE,plt_stations=TRUE,plt_bars=FALSE,plt_surface=TRUE,plt_reflines=TRUE);
