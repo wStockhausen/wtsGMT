@@ -5,15 +5,15 @@
 plotMap.CSV(dfr = NULL, csvin = NULL, lat = "latitude",
   lon = "longitude", col = NULL, gmt = 4, label = "Tanner Crab",
   year = "", xyrng = "180/205/54/62", zscl = NULL, ztype = "Catch",
-  zunits = "crab", delx = 0.5, dely = 0.25, blocktype = c("MEAN",
-  "SUM"), plt_blocktype = c("SMOOTH", "COARSE"), logtr = FALSE,
-  rotate = FALSE, plt_title = FALSE, plt_bars = FALSE,
+  zunits = "crab", rotate = FALSE, elev = 70, delx = 0.5, dely = 0.25,
+  blocktype = c("MEAN", "SUM"), plt_blocktype = c("SMOOTH", "COARSE"),
+  logtr = FALSE, plt_title = FALSE, plt_bars = FALSE,
   plt_surface = FALSE, plt_blocklocations = FALSE,
   plt_colorscale = plt_surface | plt_bars, plt_stations = FALSE,
   plt_reflines = FALSE, reflines = list(list(lon = -166 + 0 * seq(from = 50,
   to = 80, by = 1), lat = seq(from = 50, to = 80, by = 1))), showMap = FALSE,
   psFile = "catchMaps", pdfDir = "", bathymetryFile = file.path(getwd(),
-  "data/depthcontour_200500.prn"), debug = FALSE)
+  "data/depthcontour_200500.prn"), cleanup = TRUE)
 }
 \arguments{
   \item{dfr}{= dataframe to plot}
@@ -37,20 +37,17 @@ plotMap.CSV(dfr = NULL, csvin = NULL, lat = "latitude",
   \item{xyrng}{= x-y range for map as GMT string
   ('xmin/xmax/ymin/ymax')}
 
-  \item{psFile}{= filename for output EPS file (no
-  extension--will be eps)}
-
-  \item{batchFile}{= path to plotCatch.bat}
-
-  \item{bathymetryFile}{= filename of bathymetry to plot}
-
-  \item{epsToolFile}{= filename of EPS Tool batch file}
-
   \item{zscl}{= z-scale (max) for map}
 
   \item{ztype}{= label for z axes}
 
   \item{zunits}{= units for z axes}
+
+  \item{rotate}{= flag (T/F) or value of angle for map
+  rotation (angle=180 if rotate=T/F)}
+
+  \item{elev}{= elevation for map perspective is rotate is
+  not FALSE}
 
   \item{delx}{= x increment for associated grids}
 
@@ -85,11 +82,14 @@ plotMap.CSV(dfr = NULL, csvin = NULL, lat = "latitude",
   \item{showMap}{= flag (T/F) to view EPS plots using
   GSView}
 
-  \item{psFile}{=}
+  \item{psFile}{= filename for output file (no
+  extension--will be pdf)}
 
-  \item{pdfDir}{=}
+  \item{pdfDir}{= directory for output file}
 
-  \item{bathymetryfile}{=}
+  \item{bathymetryfile}{= filename of bathymetry to plot}
+
+  \item{cleanup}{= flag to remove temporary files}
 }
 \value{
 z-scale used for plot.
@@ -101,8 +101,8 @@ GMT.
 \details{
 
 
-External Requirements:\n --GMT 4.5.x --need both gswin32c
-and gswin64c installed\n --on network, need to use mapped
-drives to specify files
+External Requirements: * GMT 4.5.x * on Windows, need both
+gswin32c and gswin64c installed * on network, need to use
+mapped drives to specify files
 }
 

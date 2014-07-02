@@ -19,6 +19,7 @@
 #' @param   plt_colorscale = flag to plot color scale
 #' @param   plt_reflines = flag to include refernce lines on map
 #' @param   plt_title = flag to include title on map
+#' @param   cleanup = flag to remove temporary files
 #'
 #' @return GMT function script as character vector
 #' 
@@ -38,7 +39,8 @@ createPlotScript.GMT4<-function(z10=1,
                                 plt_stations=FALSE,
                                 plt_colorscale=FALSE,
                                 plt_reflines=FALSE,
-                                plt_title=FALSE){
+                                plt_title=FALSE,
+                                cleanup=TRUE){
     script<-'';
     #
     # GMT script to plot catch or CPUE for CRAB
@@ -89,9 +91,12 @@ createPlotScript.GMT4<-function(z10=1,
     script<-paste(script,"psbasemap ${rngxyz} ${geotransform} ${rot3d} -X${xs} -Y${ys} ${mapscl} ${mapbndry} -K > ${postfile}",sep='\n')
     
     #expand page size by adding 'invisible' characters to lower left, upper right corners
-    script<-paste(script,"\n","#--EXPAND PAGE SIZE",sep='\n')
-    script<-paste(script,"echo  -0.5 -0.45  24 0 4 LB L|pstext -R0/1/0/1/ -JX1i -G150   -N -O -K >> ${postfile}",sep='\n')
-    script<-paste(script,"echo   6.1 ${ymx} 24 0 4 TR R|pstext -R0/1/0/1/ -JX1i -G150   -N -O -K >> ${postfile}",sep='\n')
+    rmx<-6.1;
+    if (plt_colorscale) rmx<-7.0;
+    script<-paste(script,"\n","#--EXPAND PAGE SIZE",sep='\n');
+    script<-paste(script,"\n",paste("rmx=",rmx,'\n',sep=''));
+    script<-paste(script,"echo  -0.5   -0.45  24 0 4 LB L|pstext -R0/1/0/1/ -JX1i -G150   -N -O -K >> ${postfile}",sep='\n')
+    script<-paste(script,"echo  ${rmx} ${ymx} 24 0 4 TR R|pstext -R0/1/0/1/ -JX1i -G150   -N -O -K >> ${postfile}",sep='\n')
     
     # Make a color palette table
     script<-paste(script,"\n","#--MAKE COLOR PALETTE",sep='\n')
@@ -126,8 +131,6 @@ createPlotScript.GMT4<-function(z10=1,
             #replot the basemap (w/out X,Y shift), as this may have been clipped
             script<-paste(script,"psbasemap ${rngxyz} ${geotransform} ${rot3d} ${mapscl} ${mapbndry} -O -K >> ${postfile}",sep='\n')
         } else {
-#             #create surface
-#             script<-paste(script,"surface tmp.xyg -Gtmp1.grd ${rngxy} ${xyblksz} -Ll0ud   -T0.9",sep='\n');
             #create grid
             script<-paste(script,"xyz2grd tmp.xyg -Gtmp1.grd ${rngxy} ${xyblksz} -F ",sep='\n');
             # plot contour surface (use -Tso instead of -Ts to outline the tiles, as well color them
@@ -145,10 +148,7 @@ createPlotScript.GMT4<-function(z10=1,
     
     if (plt_reflines){ 
         script<-paste(script,"\n","#--PLOT REFERENCE LINES",sep='\n')
-        reflines<-file.path(getwd(),'reflines.txt');
-        script<-paste(script,"\n","export reflines='",reflines,"'",sep='')
-        script<-paste(script,"psxyz ${reflines} ${rngxyz} ${geotransform} ${rot3d} -M -W2,50,-. -O -K >> ${postfile}",sep='\n')
-#        script<-paste(script,'rm -f reflines.txt',sep='\n')
+        script<-paste(script,"psxyz reflines.txt ${rngxyz} ${geotransform} ${rot3d} -M -W2,50,-. -O -K >> ${postfile}",sep='\n')
     }
     
     # plot actual station locations...
@@ -157,20 +157,6 @@ createPlotScript.GMT4<-function(z10=1,
         script<-paste(script,"\n","#--PLOT STATIONS",sep='\n')
         script<-paste(script,"gawk -F, '{print $1, $2, 0.0}' ${infile} > tmplocs.txt",sep='\n')
         script<-paste(script,"psxyz tmplocs.txt ${rngxyz} ${geotransform} ${rot3d} -Ss0.01i -W2,red -O -K >> ${postfile}",sep='\n')
-#        script<-paste(script,'rm -f tmplocs.txt',sep='\n')
-    }
-    
-    # Plot values as columns above locations
-    if (plt_bars){
-        script<-paste(script,"\n","#--PLOT BARS",sep='\n')
-        if (plt_blocktype[1]=='SMOOTH'){
-            script<-paste(script,'psxyz tmpcpue.txt ${rngxyz} ${geotransform} ${rot3d} -B//a${zstride1}f${zstride2}:"${ylab} (${zunits})":Z -JZ1.5i -Cclrs.cpt -So0.05i    -W -K -O >> ${postfile}',sep='\n')
-#        script<-paste(script,'rm -f tmpcpue.txt',sep='\n')
-        } else {
-            script<-paste(script,paste("gawk '{print $1, $2, $3, $3,",delx,",",delx,"}' tmp.xyg > tmp1.xyg",sep=''),sep='\n')
-            script<-paste(script,'psxyz tmp1.xyg ${rngxyz} ${geotransform} ${rot3d} -B//a${zstride1}f${zstride2}:"${ylab} (${zunits})":Z -JZ1.5i -Cclrs.cpt -Sou -W -K -O >> ${postfile}',sep='\n')
-#        script<-paste(script,'rm -f tmp1.xyg',sep='\n')
-        }
     }
     
     #plot block locations 
@@ -179,7 +165,17 @@ createPlotScript.GMT4<-function(z10=1,
         script<-paste(script,"\n","#--PLOT BLOCK LOCATIONS",sep='\n')
         script<-paste(script,"gawk '{print $1, $2, 0.0}' tmp.xyg > tmplocs1.txt",sep='\n')
         script<-paste(script,'psxyz tmplocs1.txt ${rngxyz} ${geotransform} ${rot3d} -Sx0.1i -W2,blue -O -K >> ${postfile}',sep='\n')
-#        script<-paste(script,'rm -f tmplocs1.txt',sep='\n')
+    }
+    
+    # Plot values as columns above locations
+    if (plt_bars){
+        script<-paste(script,"\n","#--PLOT BARS",sep='\n')
+        if (plt_blocktype[1]=='SMOOTH'){
+            script<-paste(script,'psxyz tmpcpue.txt ${rngxyz} ${geotransform} ${rot3d} -B//a${zstride1}f${zstride2}:"${ylab} (${zunits})":Z -JZ1.5i -Cclrs.cpt -So0.05i    -W -K -O >> ${postfile}',sep='\n')
+        } else {
+            script<-paste(script,paste("gawk '{print $1, $2, $3, $3,",delx,",",delx,"}' tmp.xyg > tmp1.xyg",sep=''),sep='\n')
+            script<-paste(script,'psxyz tmp1.xyg ${rngxyz} ${geotransform} ${rot3d} -B//a${zstride1}f${zstride2}:"${ylab} (${zunits})":Z -JZ1.5i -Cclrs.cpt -Sou -W -K -O >> ${postfile}',sep='\n')
+        }
     }
     
     # Label the year for each panel
@@ -209,10 +205,20 @@ createPlotScript.GMT4<-function(z10=1,
     script<-paste(script,"ps2raster ${postfile} -A -S -Tf",sep='\n')
 
     #clean up temporary files
-    script<-paste(script,"\n","#--CLEAN UP",sep='\n')
-#    script<-paste(script,'rm -f clrs.cpt',sep='\n')
-#    script<-paste(script,'rm -f .gmtcommands4',sep='\n')
-#    script<-paste(script,'rm -f .gmtdefaults4',sep='\n')
+    if (cleanup){
+        script<-paste(script,"\n","#--CLEAN UP",sep='\n')
+        script<-paste(script,'rm -f tmpcpue.txt',sep='\n')
+        script<-paste(script,'rm -f tmp.xyg',sep='\n')
+        script<-paste(script,'rm -f tmp1.xyg',sep='\n')
+        script<-paste(script,'rm -f tmp1.grd',sep='\n')
+        script<-paste(script,'rm -f tmplocs.txt',sep='\n')
+        script<-paste(script,'rm -f tmplocs1.txt',sep='\n')
+        script<-paste(script,'rm -f reflines.txt',sep='\n')
+        script<-paste(script,"rm -f ${postfile}",sep='\n')
+        script<-paste(script,'rm -f clrs.cpt',sep='\n')
+        script<-paste(script,'rm -f .gmtcommands4',sep='\n')
+        script<-paste(script,'rm -f .gmtdefaults4',sep='\n')
+    }
     
     #make substitutions
     script<-gsub('${z10}',as.character(z10),script,fixed=TRUE);

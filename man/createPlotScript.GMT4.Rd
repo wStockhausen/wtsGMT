@@ -6,7 +6,7 @@ createPlotScript.GMT4(z10 = 1, delx = 1, dely = 1, logtr = FALSE,
   blocktype = c("MEAN", "SUM"), plt_blocktype = c("SMOOTH", "COARSE"),
   plt_surface = FALSE, plt_bars = FALSE, plt_blocklocations = FALSE,
   plt_stations = FALSE, plt_colorscale = FALSE, plt_reflines = FALSE,
-  plt_title = FALSE)
+  plt_title = FALSE, cleanup = TRUE)
 }
 \arguments{
   \item{z1}{= scale for z axis}
@@ -37,6 +37,8 @@ createPlotScript.GMT4(z10 = 1, delx = 1, dely = 1, logtr = FALSE,
   map}
 
   \item{plt_title}{= flag to include title on map}
+
+  \item{cleanup}{= flag to remove temporary files}
 }
 \value{
 GMT function script as character vector

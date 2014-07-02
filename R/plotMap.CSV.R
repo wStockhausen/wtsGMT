@@ -4,10 +4,10 @@
 #'@description A function to plot a dataframe or csv file on a map using GMT.
 #'
 #'@details 
-#' External Requirements:\n
-#'   --GMT 4.5.x
-#'   --need both gswin32c and gswin64c installed\n
-#'   --on network, need to use mapped drives to specify files
+#' External Requirements:
+#'   * GMT 4.5.x
+#'   * on Windows, need both gswin32c and gswin64c installed
+#'   * on network, need to use mapped drives to specify files
 #'
 #'
 #' @param   dfr       = dataframe to plot
@@ -20,13 +20,11 @@
 #' @param   label = map title
 #' @param   year = year label
 #' @param   xyrng = x-y range for map as GMT string ('xmin/xmax/ymin/ymax')
-#' @param   psFile    = filename for output EPS file (no extension--will be eps)
-#' @param   batchFile      = path to plotCatch.bat
-#' @param   bathymetryFile = filename of bathymetry to plot
-#' @param   epsToolFile    = filename of EPS Tool batch file
 #' @param   zscl      = z-scale (max) for map
 #' @param   ztype = label for z axes
 #' @param   zunits = units for z axes
+#' @param   rotate = flag (T/F) or value of angle for map rotation (angle=180 if rotate=T/F)
+#' @param   elev = elevation for map perspective is rotate is not FALSE
 #' @param   delx = x increment for associated grids
 #' @param   dely = y increment for associated grids
 #' @param   logtr = flag to ln-transform z data
@@ -40,9 +38,10 @@
 #' @param   reflines = list of lists(lon=,lat=) of reference lines to plot
 #' @param   plt_title = flag to include title on map
 #' @param   showMap   = flag (T/F) to view EPS plots using GSView
-#' @param psFile = 
-#' @param pdfDir = 
-#' @param bathymetryfile = 
+#' @param   psFile = filename for output file (no extension--will be pdf)
+#' @param   pdfDir = directory for output file
+#' @param   bathymetryfile = filename of bathymetry to plot
+#' @param   cleanup = flag to remove temporary files
 #'
 #' @return z-scale used for plot.
 #' 
@@ -64,12 +63,13 @@ plotMap.CSV<-function(dfr=NULL,
                       zscl=NULL,
                       ztype='Catch',
                       zunits='crab',
+                      rotate=FALSE,
+                      elev=70,
                       delx=0.5,
                       dely=0.25,
                       blocktype=c('MEAN','SUM'),
                       plt_blocktype=c('SMOOTH','COARSE'),
                       logtr=FALSE,
-                      rotate=FALSE,
                       plt_title=FALSE,
                       plt_bars=FALSE,
                       plt_surface=FALSE,
@@ -82,7 +82,7 @@ plotMap.CSV<-function(dfr=NULL,
                       psFile='catchMaps',
                       pdfDir='',
                       bathymetryFile=file.path(getwd(),'data/depthcontour_200500.prn'),
-                      debug=FALSE
+                      cleanup=TRUE
                       ) {
     
     #check the operating platform
@@ -102,6 +102,7 @@ plotMap.CSV<-function(dfr=NULL,
         }
     }
   
+    retDFR<-FALSE;
     if (is.null(dfr)){
         #read in table from csv file
       if (is.null(csvin)) {
@@ -110,13 +111,22 @@ plotMap.CSV<-function(dfr=NULL,
       } else {
         dfr<-read.csv(csvin,stringsAsFactors=FALSE);
       }
+      retDFR<-TRUE;
       names(dfr)<-tolower(names(dfr));
     }
     
-    #save to temporary file csvfile (must do this even for input csvfile) for plots
-    dfr[[lon]]<-dfr[[lon]]*(dfr[[lon]]>0) + (360+dfr[[lon]])*(dfr[[lon]]<0);
-    dfr1<-data.frame(longitude=dfr[[lon]],latitude=dfr[[lat]]);
+    #extract relevant columns, convert lon's to 0-360, save to temporary csv file for plots
+    dfr1<-data.frame(lon=dfr[[lon]],lat=dfr[[lat]]);
     dfr1[[col]]<-dfr[[col]];
+    dfr1[["lon"]]<-dfr1[["lon"]]*(dfr1[["lon"]]>0) + (360+dfr1[["lon"]])*(dfr1[["lon"]]<0);
+    csvfile<-file.path(getwd(),'tmp_gmt.csv');
+    write.table(dfr1,
+                csvfile,
+                sep=',',
+                na="",
+                quote=FALSE,
+                col.names=FALSE,
+                row.names=FALSE)
     
     if (is.null(zscl)) {
       if (logtr) {
@@ -147,32 +157,15 @@ plotMap.CSV<-function(dfr=NULL,
     zstride1<-wtsPlotUtils::computeTickInterval(zscl,1);
     zstride2<-zstride1/5;
     
-    #save to temporary file csvfile 
-    csvfile<-file.path(getwd(),'tmp_gmt.csv');
-    write.table(dfr1,
-                csvfile,
-                sep=',',
-                na="",
-                quote=FALSE,
-                col.names=FALSE,
-                row.names=FALSE)
-
     #inputs for the gmt batch files:
     # %1 = input csv filename
     # %2 = output postscript filename
     yearlabel<-paste(year,sep='');
-    psfname<-psFile;
 
-    psf<-paste(psfname,'.ps',sep='');
+    psf<-paste(psFile,'.ps',sep='');
     if (file.exists(psf)){
       cat("Deleting old version of '",psf,"'.\n",sep='')
       file.remove(psf);
-    }
-    
-    epsf<-paste(psfname,'.eps',sep='')
-    if (file.exists(epsf)){
-      cat("Deleting old version of '",epsf,"'.\n")
-      file.remove(epsf);
     }
 
     blktyp<-'';
@@ -193,37 +186,40 @@ plotMap.CSV<-function(dfr=NULL,
                    set, 'z10=',z10,'\n',
                    set, 'ztype=',ztype,'\n',
                    set, 'zunits=',zunits,'\n',
-                   set, 'yearlabel=',yearlabel,'\n',
+                   set, 'yearlabel=',yearlabel,
                    sep='');
     
     rngxy<-paste("-R",xyrng,sep='');
     rngxyz<-rngxy;
-    ymx<-3.5;
+    ymx<-3.65;
     axs<-"WESn";        
     JZ<-'';
     rot3d<-'';
-    if (rotate!=FALSE){
+    if (is.logical(rotate)&&(!rotate)) {
+        plt_bars<-FALSE;#can't plot bars because elevation is effectively 90
+    } else {
+        if (is.logical(rotate)) {rotate<-180;} #rotate was TRUE, so set to 180
         rngxyz<-paste(rngxy,'/0/',zscl,sep='');
-        ymx<-2.3;
+        ymx<-3.65;
         axs<-"wESn";
         if (gmt==4){
-            if (rotate==TRUE){rot3d<-'-E180/70';}
-            if (rotate==170) {rot3d<-'-E170/70';}
-            if (rotate==160) {rot3d<-'-E160/70';}
+            rot3d<-paste('-E',rotate,'/',elev,sep='');
         } else {
             JZ<-paste('-JZ',ymx,sep='');
-            if (rotate==TRUE){rot3d<-'-p180/40/0';}
-            if (rotate==170) {rot3d<-'-p170/40/0';}
-            if (rotate==160) {rot3d<-'-p160/40/0';}
+            rot3d<-paste('-p',rotate,'/',elev,'/0',sep='');
         }
     }
+    cat("rotate =",rotate,"\n");
+    cat("rot3d =",rot3d,'\n');
+    
     setenvs<-paste(setenvs,"\n",
                    set,"rngxy='",rngxy,"'\n",
                    set,"rngxyz='",rngxyz,"'\n",
                    set,"rot3d='",rot3d,"'\n",
                    set,"JZ='",JZ,"'\n",
                    set,"ymx=",ymx,"\n",
-                   set,"axs=",axs,sep='')
+                   set,"axs=",axs,
+                   sep='')
     
     delxy<-paste(delx,"/",dely,sep='');
     setenvs<-paste(setenvs,"\n",
@@ -234,7 +230,8 @@ plotMap.CSV<-function(dfr=NULL,
                     set,"mapscl=-L182/55/55/100k\n",
                     set,"xyblksz=-I",delxy,"\n",
                     set,"xs=1i\n",
-                    set,"ys=1i",sep='')
+                    set,"ys=1i",
+                   sep='')
     
     #set values for input file and output postscript file
     setenvs<-paste(setenvs,"\n","#--IMPORTANT FILES",sep='\n')    
@@ -242,26 +239,25 @@ plotMap.CSV<-function(dfr=NULL,
     setenvs<-paste(setenvs,"\n",set,"postfile='",psf,"'\n",sep='')
     setenvs<-paste(setenvs,"\n",set,"bathymetryfile='",bathymetryFile,"'\n",sep='')
     
+    cat("setenvs = ",setenvs,sep='\n')
+    
     if (gmt==4) {
         script<-createPlotScript.GMT4(z10=z10,
                                       delx=delx,
                                       dely=dely,
-                                        logtr=logtr,
-                                        blocktype=blocktype[1],
-                                        plt_blocktype=plt_blocktype[1],
-                                        plt_surface=plt_surface,
-                                        plt_bars=plt_bars,
-                                        plt_blocklocations=plt_blocklocations,
-                                        plt_stations=plt_stations,
-                                        plt_colorscale=plt_colorscale,
-                                        plt_reflines=plt_reflines,
-                                        plt_title=plt_title);
+                                      logtr=logtr,
+                                      blocktype=blocktype[1],
+                                      plt_blocktype=plt_blocktype[1],
+                                      plt_surface=plt_surface,
+                                      plt_bars=plt_bars,
+                                      plt_blocklocations=plt_blocklocations,
+                                      plt_stations=plt_stations,
+                                      plt_colorscale=plt_colorscale,
+                                      plt_reflines=plt_reflines,
+                                      plt_title=plt_title,
+                                      cleanup=cleanup);
     }
-    
-    strVw<-'';
-    if (showMap) {
-        if (platform==Windws) {strVw<-paste('call "%GhostView_HOME%\\gsview64" ',epsf);}
-    }
+    cat("script = ",script,sep='\n');
     
     cat(shll,'\n',
         setenvs,'\n',
@@ -275,14 +271,16 @@ plotMap.CSV<-function(dfr=NULL,
     cat("Starting GMT\n")
     if (platform==MacOSX) system(paste('/bin/bash ',batfile,sep=''));
     if (platform==Windws) system(batfile,show.output.on.console=TRUE);
-#    file.remove(batfile)
+
+    if (cleanup) {
+        file.remove(csvfile);
+        file.remove(batfile);
+    }
     
     cat("Finished running GMT portion\n");
     
-#    file.remove(csvfile);
-#    file.remove(psf);
-    
     cat('\nzscale used for plots was ',zscl,'\n\n\n');
-    return(zscl);
+    if (retDFR) return(invisible(list(dfr=dfr,zscl=zscl)));
+    return(invisible(zscl));
 }
 
