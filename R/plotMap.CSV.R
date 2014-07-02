@@ -46,7 +46,9 @@
 #'
 #' @return z-scale used for plot.
 #' 
-#' @importFrom wtsUtilities getCSV
+#'@importFrom wtsPlotUtils computeTickInterval
+#'@importFrom wtsUtilities getOperatingSystem
+#'@importFrom wtsUtilities getCSV
 #' 
 #' @export
 #'
@@ -142,7 +144,7 @@ plotMap.CSV<-function(dfr=NULL,
     if (!logtr) z10<-floor(log(zscl)/log(10));
     zscl<-zscl/(10^z10); #normalize to factor of 10 scaling
     zinc<-zscl/100;
-    zstride1<-computeTickInterval(zscl,1);
+    zstride1<-wtsPlotUtils::computeTickInterval(zscl,1);
     zstride2<-zstride1/5;
     
     #save to temporary file csvfile 

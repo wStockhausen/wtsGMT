@@ -18,6 +18,8 @@
 #'
 #'@return dataframe with the gridded values
 #'
+#'@importFrom wtsUtilities getOperatingSystem
+#'
 #'@export
 #'
 gridCSV<-function(dfr=NULL,
@@ -36,7 +38,7 @@ gridCSV<-function(dfr=NULL,
     #check the operating platform
     MacOSX<-'MacOSX';
     Windws<-'Windows';
-    platform<-getOperatingSystem();
+    platform<-wtsUtilities::getOperatingSystem();
     
     #check for unc paths
     if (platform=='Windows'){
