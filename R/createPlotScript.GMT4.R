@@ -95,8 +95,8 @@ createPlotScript.GMT4<-function(z10=1,
     if (plt_colorscale) rmx<-7.0;
     script<-paste(script,"\n","#--EXPAND PAGE SIZE",sep='\n');
     script<-paste(script,"\n",paste("rmx=",rmx,'\n',sep=''));
-    script<-paste(script,"echo  -0.5   -0.45  24 0 4 LB L|pstext -R0/1/0/1/ -JX1i -G150   -N -O -K >> ${postfile}",sep='\n')
-    script<-paste(script,"echo  ${rmx} ${ymx} 24 0 4 TR R|pstext -R0/1/0/1/ -JX1i -G150   -N -O -K >> ${postfile}",sep='\n')
+    script<-paste(script,"echo  -0.5   -0.45  24 0 4 LB L|pstext -R0/1/0/1/ -JX1i -G254   -N -O -K >> ${postfile}",sep='\n')
+    script<-paste(script,"echo  ${rmx} ${ymx} 24 0 4 TR R|pstext -R0/1/0/1/ -JX1i -G254   -N -O -K >> ${postfile}",sep='\n')
     
     # Make a color palette table
     script<-paste(script,"\n","#--MAKE COLOR PALETTE",sep='\n')
