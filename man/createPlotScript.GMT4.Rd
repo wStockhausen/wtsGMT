@@ -2,15 +2,13 @@
 \alias{createPlotScript.GMT4}
 \title{Creates a shell script for GMT 4.5 to plot a dataframe or csv file on a map.}
 \usage{
-createPlotScript.GMT4(z10 = 1, delx = 1, dely = 1, logtr = FALSE,
+createPlotScript.GMT4(delx = 1, dely = 1, logtr = FALSE,
   blocktype = c("MEAN", "SUM"), plt_blocktype = c("SMOOTH", "COARSE"),
   plt_surface = FALSE, plt_bars = FALSE, plt_blocklocations = FALSE,
   plt_stations = FALSE, plt_colorscale = FALSE, plt_reflines = FALSE,
   plt_title = FALSE, cleanup = TRUE)
 }
 \arguments{
-  \item{z1}{= scale for z axis}
-
   \item{delx}{= x increment for associated grids}
 
   \item{dely}{= y increment for associated grids}

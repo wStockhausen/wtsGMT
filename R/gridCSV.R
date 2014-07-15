@@ -4,36 +4,37 @@
 #'@description Function to grid a dataframe or csv file using GMT.
 #'
 #'@param dfr - the dataframe to grid
-#'@param csvin - the path to the csv file to grid
 #'@param lat - column name containing latitude coordinates
 #'@param lon - column name containing longitude coordinates
 #'@param col - column with value to grid
+#'@param logtr - flag (T/F) to log10-transform z values before gridding
 #'@param xyrng - GMT range string for grid limits, e.g. 'minLon/maxLon/minLat/maxLat'
 #'@param delx - grid cell size in x (longitude)
 #'@param dely - grid cell size in y (latitude)
 #'@param blocktype - blocking type for values falling inside a grid cell ('SUM' or 'MEAN')
-#'@param tmpFile - temporary csv file name 
-#'@param tmpData - temporary data file name
-#'@param tmpGrid - temporary grid file name
+#'@param xyzFile - temporary file name for xyz values
+#'@param tmpGrid - temporary file name for grid values
+#'@param cleanup - flag (T/F) to remove temporary files
 #'
-#'@return dataframe with the gridded values
+#'@return dataframe with the gridded values as column names 'lon','lat', and col.
 #'
 #'@importFrom wtsUtilities getOperatingSystem
+#'@importFrom wtsUtilities getCSV
 #'
 #'@export
 #'
 gridCSV<-function(dfr=NULL,
-                  csvin=NULL,
                   lat='latitude',
                   lon='longitude',
-                  col='legalret',
+                  col=NULL,
+                  logtr=FALSE,
                   xyrng='180/205/54/62',
-                  delx=0.4,
-                  dely=0.2,
-                  blocktype='SUM',
-                  tmpFile=file.path(getwd(),'tmpFile.csv'),
-                  tmpData=file.path(getwd(),'tmpData.txt'),
-                  tmpGrid=file.path(getwd(),'tmpGrid.xyg')){
+                  delx=0.50,
+                  dely=0.25,
+                  blocktype=c('MEAN','SUM'),
+                  xyzFile=file.path(getwd(),'tmpXYZ.txt'),
+                  tmpGrid=file.path(getwd(),'tmpGrid.xyg'),
+                  cleanup=FALSE){
   
     #check the operating platform
     MacOSX<-'MacOSX';
@@ -52,66 +53,72 @@ gridCSV<-function(dfr=NULL,
         }
     }
   
-    if (is.null(dfr)){
+    if (!is.data.frame(dfr)){
         #read in table from csv file
-        if (is.null(csvin)) {
+        if (is.null(dfr)) {
             dfr = wtsUtilities::getCSV(caption="Select csv file to grid");
             if (is.null(dfr)) return(NULL);
         } else {
-            cat('\nRead csv file "',csvin,'"\n\n');
-            dfr<-read.csv(csvin,stringsAsFactors=FALSE);
+            cat('\nRead csv file "',dfr,'"\n\n');
+            dfr<-read.csv(dfr,stringsAsFactors=FALSE);
         }
         names(dfr)<-tolower(names(dfr));
     }
     
     #extract only required columns and adjust to positive longitudes
-    dfr<-dfr[,c(lon,lat,col)];
-    dfr[[lon]]<-dfr[[lon]]*(dfr[[lon]]>0) + (360+dfr[[lon]])*(dfr[[lon]]<0);
+    dfr1<-data.frame(lon=dfr[[lon]],lat=dfr[[lat]]);
+    dfr1[["lon"]]<-dfr1$lon*(dfr1$lon>0) + (360+dfr1$lon)*(dfr1$lon<0);
+    dfr1[["z1"]] <-dfr[[col]];
     
+    if (logtr){
+        dfr1[["z1"]]<-log(dfr1$z1+1)/log(10);#z log10 transformed (not ln)
+    }
+    dfr1[["z2"]]<-dfr1[["z1"]];
     
-    #save to temporary file csvfile 
-    write.table(dfr,
-              tmpFile,
-              sep=',',
-              na="",
-              quote=FALSE,
-              col.names=FALSE,
-              row.names=FALSE)
-    
-    zscale<-max(dfr[,3],na.rm=TRUE);
+    #save to temporary xyz file 
+    write.table(dfr1,
+                xyzFile,
+                sep='  ',
+                na="",
+                quote=FALSE,
+                col.names=FALSE,
+                row.names=FALSE)
   
-    if (blocktype=='SUM')  blktyp<-'-Sz';
-    if (blocktype=='MEAN') blktyp='';
+    if (blocktype[1]=='SUM')  blktyp<-'-Sz';
+    if (blocktype[1]=='MEAN') blktyp='';
     
-    if (platform==MacOSX){shll<-'#!/bin/sh -x'; batfile<-'gridCSV.sh';  set<-'export ';}
-    if (platform==Windws){shll<-'';             batfile<-'gridCSV.bat'; set<-'set ';}
+    rngxy<-paste("-R",xyrng,sep='');
+    delxy<-paste(delx,"/",dely,sep='');
     
-    if (platform==MacOSX){blockmean<-paste('gmt blockmean ',tmpData,' -I${delx}/${dely} ${blktyp} ${range} -C -F -V 1> ',sep='');}
-    if (platform==Windws){blockmean<-paste('    blockmean ',tmpData,' -I%delx%/%dely%   %blktyp%  %range%  -C -F -V 1> ',sep='');}
+    if (platform==MacOSX){shll<-'#!/bin/sh +'; batfile<-'gridCSV.sh';  set<-'export ';}
+    if (platform==Windws){shll<-'';            batfile<-'gridCSV.bat'; set<-'set ';}
     
-    setenvs<-paste(set,'delx=',delx,'\n',
-                   set,'dely=',dely,'\n',
-                   set,'blktyp=',blktyp,'\n',
-                   set,'zscale=',zscale,'\n',
-                   set,'range=-R',xyrng,sep='');
+    setenvs<-paste(set,"rngxy='",rngxy,"'\n",
+                   set,"xyblksz=-I",delxy,"\n",
+                   set,"blocktype=",blktyp,"\n",
+                   sep='')
     
-    cat(shll,'\n',setenvs,'\n',
-        "gawk -F, '{print $1, $2, $3}' ",tmpFile,' 1> ',tmpData,' \n',
-         blockmean,tmpGrid,' \n',
-         file=batfile,sep='');
+    script<-paste('blockmean "',xyzFile,'" ${rngxy} ${xyblksz} -C -F ${blocktype} > ',tmpGrid, sep='');
     
-    if (platform==MacOSX) Sys.chmod(batfile);#make it executable
+    cat(shll,'\n',
+        setenvs,'\n',
+        script,' \n',
+        file=batfile,sep='');
     
-    if (platform==MacOSX) system2(paste('./',batfile,sep=''));
+#    if (platform==MacOSX) Sys.chmod(batfile);#make it executable
+    
+    if (platform==MacOSX) system(paste('/bin/bash ',batfile,sep=''));
     if (platform==Windws) system(batfile,show.output.on.console=TRUE);
     
-    dfr1<-read.csv(tmpGrid,header=FALSE,sep="")
-    names(dfr1)<-c(lon,lat,col);
+    dfr2<-read.table(tmpGrid,header=FALSE,sep="",col.names=c("lon","lat",col))
     
-    file.remove(batfile)
-    file.remove(tmpFile)
-    file.remove(tmpData)
-    file.remove(tmpGrid)
+    if (cleanup){
+        file.remove(batfile)
+        file.remove(xyzFile)
+        file.remove(tmpGrid)
+    }
     
-    return(dfr1)
+    return(dfr2)
 }
+
+#dfr1<-gridCSV(NULL,col='legalret',blocktype='SUM')

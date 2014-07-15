@@ -2,25 +2,20 @@
 \alias{plotMap.CSV}
 \title{Plots a dataframe or csv file on a map using GMT.}
 \usage{
-plotMap.CSV(dfr = NULL, csvin = NULL, lat = "latitude",
-  lon = "longitude", col = NULL, gmt = 4, label = "Tanner Crab",
-  year = "", xyrng = "180/205/54/62", zscl = NULL, ztype = "Catch",
-  zunits = "crab", rotate = FALSE, elev = 70, delx = 0.5, dely = 0.25,
-  blocktype = c("MEAN", "SUM"), plt_blocktype = c("SMOOTH", "COARSE"),
-  logtr = FALSE, plt_title = FALSE, plt_bars = FALSE,
-  plt_surface = FALSE, plt_blocklocations = FALSE,
+plotMap.CSV(dfr = NULL, lat = "latitude", lon = "longitude", col = NULL,
+  gmt = 4, title = "Tanner Crab", year = "", xyrng = "180/205/54/62",
+  zscl = NULL, zlab = "Catch", zunits = "num. crab", rotate = FALSE,
+  elev = 70, delx = 0.5, dely = 0.25, blocktype = c("MEAN", "SUM"),
+  plt_blocktype = c("SMOOTH", "COARSE"), logtr = FALSE, plt_title = FALSE,
+  plt_bars = FALSE, plt_surface = FALSE, plt_blocklocations = FALSE,
   plt_colorscale = plt_surface | plt_bars, plt_stations = FALSE,
   plt_reflines = FALSE, reflines = list(list(lon = -166 + 0 * seq(from = 50,
-  to = 80, by = 1), lat = seq(from = 50, to = 80, by = 1))), showMap = FALSE,
-  psFile = "catchMaps", pdfDir = "", bathymetryFile = file.path(getwd(),
-  "data/depthcontour_200500.prn"), cleanup = TRUE)
+  to = 80, by = 1), lat = seq(from = 50, to = 80, by = 1))),
+  psFile = "catchMaps", toPDF = FALSE, bathymetryFile = file.path(getwd(),
+  "data/depthcontour_200500.prn"), cleanup = FALSE)
 }
 \arguments{
-  \item{dfr}{= dataframe to plot}
-
-  \item{csvin}{= csv file to plot}
-
-  \item{csvout}{= output csv file for CPUE}
+  \item{dfr}{= dataframe or csv file to plot}
 
   \item{lat}{= column name containing latitudes}
 
@@ -30,7 +25,7 @@ plotMap.CSV(dfr = NULL, csvin = NULL, lat = "latitude",
 
   \item{gmt}{= GMT version (4 or 5)}
 
-  \item{label}{= map title}
+  \item{title}{= map title}
 
   \item{year}{= year label}
 
@@ -39,7 +34,7 @@ plotMap.CSV(dfr = NULL, csvin = NULL, lat = "latitude",
 
   \item{zscl}{= z-scale (max) for map}
 
-  \item{ztype}{= label for z axes}
+  \item{zlab}{= label for z axes}
 
   \item{zunits}{= units for z axes}
 
@@ -61,11 +56,11 @@ plotMap.CSV(dfr = NULL, csvin = NULL, lat = "latitude",
   \item{plt_blocktype}{= flag ('SMOOTH','COARSE') for
   displaying surface}
 
-  \item{plt_surface}{= flag to plot data as a color density
-  image}
-
   \item{plt_blocklocations}{= flag to plot block locations
   as X's}
+
+  \item{plt_surface}{= flag to plot data as a color density
+  image}
 
   \item{plt_bars}{= flag to plot data as bars}
 
@@ -78,9 +73,6 @@ plotMap.CSV(dfr = NULL, csvin = NULL, lat = "latitude",
   lines to plot}
 
   \item{plt_title}{= flag to include title on map}
-
-  \item{showMap}{= flag (T/F) to view EPS plots using
-  GSView}
 
   \item{psFile}{= filename for output file (no
   extension--will be pdf)}

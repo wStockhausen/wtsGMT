@@ -9,35 +9,31 @@
 #'   * on Windows, need both gswin32c and gswin64c installed
 #'   * on network, need to use mapped drives to specify files
 #'
-#'
-#' @param   dfr       = dataframe to plot
-#' @param   csvin     = csv file to plot
-#' @param   csvout    = output csv file for CPUE
+#' @param   dfr       = dataframe or csv file to plot
 #' @param   lat = column name containing latitudes
 #' @param   lon = column name containing longitudes
 #' @param   col = name of column containing z data
 #' @param   gmt = GMT version (4 or 5)
-#' @param   label = map title
+#' @param   title = map title
 #' @param   year = year label
-#' @param   xyrng = x-y range for map as GMT string ('xmin/xmax/ymin/ymax')
-#' @param   zscl      = z-scale (max) for map
-#' @param   ztype = label for z axes
+#' @param   xyrng  = x-y range for map as GMT string ('xmin/xmax/ymin/ymax')
+#' @param   zscl   = z-scale (max) for map
+#' @param   zlab   = label for z axes
 #' @param   zunits = units for z axes
 #' @param   rotate = flag (T/F) or value of angle for map rotation (angle=180 if rotate=T/F)
-#' @param   elev = elevation for map perspective is rotate is not FALSE
-#' @param   delx = x increment for associated grids
-#' @param   dely = y increment for associated grids
-#' @param   logtr = flag to ln-transform z data
-#' @param   blocktype = flag ('MEAN' or 'SUM') for grouping data 
-#' @param   plt_blocktype = flag ('SMOOTH','COARSE') for displaying surface
-#' @param   plt_surface = flag to plot data as a color density image
+#' @param   elev   = elevation for map perspective is rotate is not FALSE
+#' @param   delx   = x increment for associated grids
+#' @param   dely   = y increment for associated grids
+#' @param   logtr  = flag to ln-transform z data
+#' @param   blocktype          = flag ('MEAN' or 'SUM') for grouping data 
+#' @param   plt_blocktype      = flag ('SMOOTH','COARSE') for displaying surface
 #' @param   plt_blocklocations = flag to plot block locations as X's
-#' @param   plt_bars = flag to plot data as bars
-#' @param   plt_colorscale = flag to plot color scale
-#' @param   plt_reflines = flag to include refernce lines on map
-#' @param   reflines = list of lists(lon=,lat=) of reference lines to plot
-#' @param   plt_title = flag to include title on map
-#' @param   showMap   = flag (T/F) to view EPS plots using GSView
+#' @param   plt_surface        = flag to plot data as a color density image
+#' @param   plt_bars           = flag to plot data as bars
+#' @param   plt_colorscale     = flag to plot color scale
+#' @param   plt_reflines       = flag to include refernce lines on map
+#' @param   reflines           = list of lists(lon=,lat=) of reference lines to plot
+#' @param   plt_title          = flag to include title on map
 #' @param   psFile = filename for output file (no extension--will be pdf)
 #' @param   pdfDir = directory for output file
 #' @param   bathymetryfile = filename of bathymetry to plot
@@ -52,17 +48,16 @@
 #' @export
 #'
 plotMap.CSV<-function(dfr=NULL,
-                      csvin=NULL,
                       lat='latitude',
                       lon='longitude',
                       col=NULL,
                       gmt=4,
-                      label='Tanner Crab',
+                      title='Tanner Crab',
                       year='',
                       xyrng='180/205/54/62',
                       zscl=NULL,
-                      ztype='Catch',
-                      zunits='crab',
+                      zlab='Catch',
+                      zunits='num. crab',
                       rotate=FALSE,
                       elev=70,
                       delx=0.5,
@@ -78,11 +73,10 @@ plotMap.CSV<-function(dfr=NULL,
                       plt_stations=FALSE,
                       plt_reflines=FALSE,
                       reflines=list(list(lon=-166+0*seq(from=50,to=80,by=1),lat=seq(from=50,to=80,by=1))),
-                      showMap=FALSE,
                       psFile='catchMaps',
-                      pdfDir='',
+                      toPDF=FALSE,
                       bathymetryFile=file.path(getwd(),'data/depthcontour_200500.prn'),
-                      cleanup=TRUE
+                      cleanup=FALSE
                       ) {
     
     #check the operating platform
@@ -102,39 +96,64 @@ plotMap.CSV<-function(dfr=NULL,
         }
     }
   
+    #read in dataframe, if necessary
     retDFR<-FALSE;
-    if (is.null(dfr)){
+    if (!is.data.frame(dfr)){
         #read in table from csv file
-      if (is.null(csvin)) {
+      if (is.null(dfr)) {
         dfr = wtsUtilities::getCSV(caption="Select csv file to plot");
         if (is.null(dfr)) return(NULL);
       } else {
-        dfr<-read.csv(csvin,stringsAsFactors=FALSE);
+        dfr<-read.csv(dfr,stringsAsFactors=FALSE);
       }
       retDFR<-TRUE;
       names(dfr)<-tolower(names(dfr));
     }
     
-    #extract relevant columns, convert lon's to 0-360, save to temporary csv file for plots
+    #extract relevant columns, convert lon's to 0-360
     dfr1<-data.frame(lon=dfr[[lon]],lat=dfr[[lat]]);
-    dfr1[[col]]<-dfr[[col]];
     dfr1[["lon"]]<-dfr1[["lon"]]*(dfr1[["lon"]]>0) + (360+dfr1[["lon"]])*(dfr1[["lon"]]<0);
-    csvfile<-file.path(getwd(),'tmp_gmt.csv');
+    dfr1[["z1"]] <-dfr[[col]];
+    
+    if (plt_surface){
+        #create grid
+        dfr1p<-gridCSV(dfr1,lat='lat',lon='lon',col='z1',logtr=logtr,
+                       xyrng=xyrng,delx=delx,dely=dely,
+                       blocktype=blocktype);
+        if (logtr) dfr1p$z1<-(10^dfr1p$z1)-1;#transform back
+    }
+    
+    #calculate z-scaling information    
+    if (is.null(zscl)) {
+        vls<-dfr1$z1;
+        if (plt_surface) vls<-c(vls,dfr1p$z1);
+        zscl<-calcZScale(vls,logtr=logtr);#z-scale in (possibly transformed) data units 
+    }    
+    if (logtr){
+        zscale<-zscl;
+        dfr1[["z1"]]<-log(dfr1$z1+1)/log(10);#z log10 transformed (not ln)
+        zunits<-paste('log@-10@-(',zunits,'+1)',sep='');
+    } else {
+        z10<-floor(log(zscl)/log(10)); #z-scale normalization factor for factor of 10 scaling
+        zscale<-zscl/(10^z10);         #z-scale normalized by factor for factor of 10 scaling
+        dfr1[["z1"]]<-dfr1$z1/(10^z10);#z normalized by factor for factor of 10 scaling
+        zunits<-paste('10@+',z10,'@+ ',zunits,sep='');
+    }
+    dfr1[["z2"]]<-dfr1[["z1"]];
+    
+    #z axis information
+    zinc  <-zscale/100;                                     #increment for color scale
+    zstride1<-wtsPlotUtils::computeTickInterval(zscale,1);  #major tick interval
+    zstride2<-zstride1/5;                                   #minor tick interval
+    
+    xyzfile<-file.path(getwd(),'tmp_xyzvals.txt');
     write.table(dfr1,
-                csvfile,
-                sep=',',
+                xyzfile,
+                sep='  ',
                 na="",
                 quote=FALSE,
                 col.names=FALSE,
                 row.names=FALSE)
-    
-    if (is.null(zscl)) {
-      if (logtr) {
-        zscl<-0.9*max(log(dfr1[,-(1:2)]+1)/log(10),na.rm=TRUE);
-      } else {
-        zscl<-0.8*max(dfr1[,-(1:2)],na.rm=TRUE);
-      }
-    }
     
     if (plt_reflines){
       str<-'';
@@ -150,16 +169,6 @@ plotMap.CSV<-function(dfr=NULL,
       cat(str,file=file.path(getwd(),'reflines.txt'));
     }
     
-    z10<-0;
-    if (!logtr) z10<-floor(log(zscl)/log(10));
-    zscl<-zscl/(10^z10); #normalize to factor of 10 scaling
-    zinc<-zscl/100;
-    zstride1<-wtsPlotUtils::computeTickInterval(zscl,1);
-    zstride2<-zstride1/5;
-    
-    #inputs for the gmt batch files:
-    # %1 = input csv filename
-    # %2 = output postscript filename
     yearlabel<-paste(year,sep='');
 
     psf<-paste(psFile,'.ps',sep='');
@@ -170,23 +179,21 @@ plotMap.CSV<-function(dfr=NULL,
 
     blktyp<-'';
     if (blocktype[1]=='SUM') blktyp='-Sz';
-    if (!logtr) zunits<-paste('10@+',z10,'@+',zunits,sep='');
     
     if (platform==MacOSX){shll<-'#!/bin/bash +'; batfile<-'plotMap.sh';  set<-'export ';}
     if (platform==Windws){shll<-'';              batfile<-'plotMap.bat'; set<-'set ';}
     
     setenvs<-paste("#--ENVIRONMENT VARIABLES\n",
-                   set, 'spplabel="',label,'"\n',
                    set, 'delx=',delx,'\n',
                    set, 'dely=',dely,'\n',
-                   set, 'zscale=',zscl,'\n',
-                   set, 'zscaleint=',zinc,'\n',
+                   set, 'zlab="',zlab,'"\n',
+                   set, 'zscale=',zscale,'\n',
+                   set, 'zinc=',zinc,'\n',
                    set, 'zstride1=',zstride1,'\n',
                    set, 'zstride2=',zstride2,'\n',
-                   set, 'z10=',z10,'\n',
-                   set, 'ztype=',ztype,'\n',
-                   set, 'zunits=',zunits,'\n',
-                   set, 'yearlabel=',yearlabel,
+                   set, 'zunits="',zunits,'"\n',
+                   set, 'title="',title,'"\n',
+                   set, 'yearlabel="',yearlabel,'"',
                    sep='');
     
     rngxy<-paste("-R",xyrng,sep='');
@@ -224,26 +231,26 @@ plotMap.CSV<-function(dfr=NULL,
     delxy<-paste(delx,"/",dely,sep='');
     setenvs<-paste(setenvs,"\n",
                     set,"delxy=",delxy,"\n",
-                    set,"mapbndry=-Bpa5f1g0.5/a5f1g0.25",axs,"\n",
+                    set,"mapbndry=-Bpa5f1g1.0/a5f1g1.0",axs,"\n",
                     set,"geotransform=-JB192.5/58/50/65/5.5i\n",
                     set,'yearlabelinfo="181 55.5 16 0 4 BL ',yearlabel,'"\n',
                     set,"mapscl=-L182/55/55/100k\n",
                     set,"xyblksz=-I",delxy,"\n",
+                    set,"blocktype=",blktyp,"\n",
                     set,"xs=1i\n",
                     set,"ys=1i",
                    sep='')
     
     #set values for input file and output postscript file
     setenvs<-paste(setenvs,"\n","#--IMPORTANT FILES",sep='\n')    
-    setenvs<-paste(setenvs,"\n",set,"infile='",csvfile,"'\n",sep='')
+    setenvs<-paste(setenvs,"\n",set,"infile='",xyzfile,"'\n",sep='')
     setenvs<-paste(setenvs,"\n",set,"postfile='",psf,"'\n",sep='')
     setenvs<-paste(setenvs,"\n",set,"bathymetryfile='",bathymetryFile,"'\n",sep='')
     
     cat("setenvs = ",setenvs,sep='\n')
     
     if (gmt==4) {
-        script<-createPlotScript.GMT4(z10=z10,
-                                      delx=delx,
+        script<-createPlotScript.GMT4(delx=delx,
                                       dely=dely,
                                       logtr=logtr,
                                       blocktype=blocktype[1],
@@ -261,19 +268,18 @@ plotMap.CSV<-function(dfr=NULL,
     
     cat(shll,'\n',
         setenvs,'\n',
-        'echo $PATH','\n',
         script,
         file=batfile,sep='');
 #    readline(prompt='start runGMT >');
     
-    if (platform==MacOSX) Sys.chmod(batfile);#make it executable
+#    if (platform==MacOSX) Sys.chmod(batfile);#make it executable
     
     cat("Starting GMT\n")
     if (platform==MacOSX) system(paste('/bin/bash ',batfile,sep=''));
     if (platform==Windws) system(batfile,show.output.on.console=TRUE);
 
     if (cleanup) {
-        file.remove(csvfile);
+        file.remove(xyzfile);
         file.remove(batfile);
     }
     

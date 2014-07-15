@@ -7,7 +7,6 @@
 #' External Requirements:\n
 #'   --GMT 4.5.x
 #'
-#' @param   z1   = scale for z axis
 #' @param   delx = x increment for associated grids
 #' @param   dely = y increment for associated grids
 #' @param   logtr = flag to ln-transform z data
@@ -27,8 +26,7 @@
 #' 
 #' @export
 #'
-createPlotScript.GMT4<-function(z10=1,
-                                delx=1,
+createPlotScript.GMT4<-function(delx=1,
                                 dely=1,
                                 logtr=FALSE,
                                 blocktype=c('MEAN','SUM'),
@@ -46,33 +44,25 @@ createPlotScript.GMT4<-function(z10=1,
     # GMT script to plot catch or CPUE for CRAB
     #  The following environment variables should be exported prior to
     #  calling this batch file.
-    #      spplabel       = species label
-    #      zscl           = desired z zscale (log10(x+1))
+    #      postfile       = output postscript file
+    #      zscale         = scale for z axes
     #      zinc           = increment for z color zscale
-    #      zscale         =
-    #      zscaleint      =
-    #      zstride1       =
-    #      zstride2       =
-    #      z10            = 
-    #      logtr          = flag to perform log(x+1) transform on CPUE/Catch (TRUE/FALSE)
+    #      zstride1       = major tick interval for z scale
+    #      zstride2       = minor tick interval for z scale
     #      blocktype      = flag indicating type of blockmean processing: MEAN (default: -S) or SUM (-Sz)
-    #      plt_bars       = plot CPUE/Catch as bars (TRUE/FALSE)
-    #      plt_surface    = plot CPUE/Catch as color density (TRUE/FALSE)
+    #      plt_bars       = plot z-values as bars (TRUE/FALSE)
+    #      plt_surface    = plot z-values as color density (TRUE/FALSE)
     #      plt_stations   = include stations on plot (TRUE/FALSE)
-    #      plt_title      = include species name as title (TRUE/FALSE)
-    #      ztype          = type of data for z axis ("Catch" or "CPUE")
-    #      zunits         = units of z axis
+    #      plt_title      = include title (TRUE/FALSE)
+    #      ztype          = type of data for z axis
+    #      zunits         = units for z axis
     #      bathymetryfile = full path to bathymetry file (paths w/ spaces must be quoted)
      
-    #  The command line inputs to this batchfile are
-    # %1 = input csv filename
-    # %2 = output postscript filename
-    #
-    #  The input csv file should have the following structure
+    #  The input xyz file should have the following structure
     #      col 1: longitude
     #      col 2: latitude
-    #      col 3: CPUE or Catch
-    #
+    #      col 3: z
+    #      col 4: z 
     
         
     # export  plotting defaults
@@ -100,26 +90,13 @@ createPlotScript.GMT4<-function(z10=1,
     
     # Make a color palette table
     script<-paste(script,"\n","#--MAKE COLOR PALETTE",sep='\n')
-    script<-paste(script,"makecpt -Cseis -T0/${zscale}/${zscaleint} -I -Z > clrs.cpt",sep='\n')
+    script<-paste(script,"makecpt -Cseis -T0/${zscale}/${zinc} -I -Z > clrs.cpt",sep='\n')
         
-    # get cpue values
-    #[notes: delimiter in infile is a comma, so need to specify '-F,'. The ','s in the print stmt are substituted w/ the delimiter] 
-    if (logtr) {
-        script<-paste(script,"\n","#--EXTRACT LN-TRANSFORMED DATA",sep='\n')
-        script<-paste(script,"\n","gawk -F, '{print $1, $2, log($3+1)/log(10), log($3+1)/log(10)}' ${infile} > tmpcpue.txt",sep='')
-        script<-paste(script,'export ylab=log@-10@-[${ztype}+1]',sep='\n')
-    } else {
-        script<-paste(script,"\n","#--EXTRACT UN-TRANSFORMED DATA",sep='\n')
-        script<-paste(script,"\n","gawk -F, '{print $1, $2,   $3/(10^",z10,"),   $3/(10^",z10,")}' ${infile} > tmpcpue.txt",sep='')
-        script<-paste(script,"export ylab=${ztype}",sep='\n')
-    }
-#    script<-paste(script,'echo ${ylab}',sep='\n')
-    
     # Create gridded surface
     if (plt_surface) {
         script<-paste(script,"\n","#--GRID AND PLOT SURFACE",sep='\n')
         # Create grid  {pixel registered [-r] and location at cell center [-C]} 
-        script<-paste(script,"blockmean tmpcpue.txt  ${rngxy} ${xyblksz} -C -F ${blocktype} > tmp.xyg",sep='\n')
+        script<-paste(script,"blockmean ${infile}  ${rngxy} ${xyblksz} -C -F ${blocktype} > tmp.xyg",sep='\n')
         if (plt_blocktype[1]=='SMOOTH') {
             #create surface
             script<-paste(script,"surface tmp.xyg -Gtmp1.grd ${rngxy} -I0.1/0.1 -Ll0 -S2 -T0.5",sep='\n');
@@ -130,7 +107,7 @@ createPlotScript.GMT4<-function(z10=1,
             script<-paste(script,"psmask -C -O -K >> ${postfile}",sep='\n');
             #replot the basemap (w/out X,Y shift), as this may have been clipped
             script<-paste(script,"psbasemap ${rngxyz} ${geotransform} ${rot3d} ${mapscl} ${mapbndry} -O -K >> ${postfile}",sep='\n')
-        } else {
+        } else if (plt_blocktype[1]=='COARSE') {
             #create grid
             script<-paste(script,"xyz2grd tmp.xyg -Gtmp1.grd ${rngxy} ${xyblksz} -F ",sep='\n');
             # plot contour surface (use -Tso instead of -Ts to outline the tiles, as well color them
@@ -148,14 +125,15 @@ createPlotScript.GMT4<-function(z10=1,
     
     if (plt_reflines){ 
         script<-paste(script,"\n","#--PLOT REFERENCE LINES",sep='\n')
-        script<-paste(script,"psxyz reflines.txt ${rngxyz} ${geotransform} ${rot3d} -M -W2,50,-. -O -K >> ${postfile}",sep='\n')
+        script<-paste(script,"psxyz reflines.txt ${rngxyz} ${geotransform} ${rot3d} -M -W4,50,-. -O -K >> ${postfile}",sep='\n')
     }
     
     # plot actual station locations...
     #[notes: delimiter in ${infile} is a comma, so need to specify '-F,'. ',' in print stmt substituted w/ the delimiter] 
     if (plt_stations){
         script<-paste(script,"\n","#--PLOT STATIONS",sep='\n')
-        script<-paste(script,"gawk -F, '{print $1, $2, 0.0}' ${infile} > tmplocs.txt",sep='\n')
+        script<-paste(script,"gawk '{print $1, $2, 0.0}' ${infile} > tmplocs.txt",sep='\n')
+#        script<-paste(script,"gawk -F, '{print $1, $2, 0.0}' ${infile} > tmplocs.txt",sep='\n')
         script<-paste(script,"psxyz tmplocs.txt ${rngxyz} ${geotransform} ${rot3d} -Ss0.01i -W2,red -O -K >> ${postfile}",sep='\n')
     }
     
@@ -171,10 +149,10 @@ createPlotScript.GMT4<-function(z10=1,
     if (plt_bars){
         script<-paste(script,"\n","#--PLOT BARS",sep='\n')
         if (plt_blocktype[1]=='SMOOTH'){
-            script<-paste(script,'psxyz tmpcpue.txt ${rngxyz} ${geotransform} ${rot3d} -B//a${zstride1}f${zstride2}:"${ylab} (${zunits})":Z -JZ1.5i -Cclrs.cpt -So0.05i    -W -K -O >> ${postfile}',sep='\n')
+            script<-paste(script,'psxyz "${infile}" ${rngxyz} ${geotransform} ${rot3d} -B//a${zstride1}f${zstride2}:"${zlab} (${zunits})":Z -JZ1.5i -Cclrs.cpt -So0.05i    -W -K -O >> ${postfile}',sep='\n')
         } else {
             script<-paste(script,paste("gawk '{print $1, $2, $3, $3,",delx,",",delx,"}' tmp.xyg > tmp1.xyg",sep=''),sep='\n')
-            script<-paste(script,'psxyz tmp1.xyg ${rngxyz} ${geotransform} ${rot3d} -B//a${zstride1}f${zstride2}:"${ylab} (${zunits})":Z -JZ1.5i -Cclrs.cpt -Sou -W -K -O >> ${postfile}',sep='\n')
+            script<-paste(script,'psxyz tmp1.xyg ${rngxyz} ${geotransform} ${rot3d} -B//a${zstride1}f${zstride2}:"${zlab} (${zunits})":Z -JZ1.5i -Cclrs.cpt -Sou -W -K -O >> ${postfile}',sep='\n')
         }
     }
     
@@ -186,42 +164,38 @@ createPlotScript.GMT4<-function(z10=1,
     if (plt_colorscale){
         script<-paste(script,"\n","#--PLOT COLOR SCALE",sep='\n')
         script<-paste(script,'export  clrbarloc=-D6.2i/1i/1.5i/0.25i',sep='\n')
-        script<-paste(script,'psscale ${clrbarloc} -Cclrs.cpt -Ba${zstride1}f${zstride2}:" ":/:"${zunits}": -O -K >> ${postfile}',sep='\n')
-        script<-paste(script,'echo 0 0 14 90 4 MC ${ylab}|pstext -R0/1/0/1 -JX1i -G0 -N -Xa6.8i -Ya1i -O -K >> ${postfile}',sep='\n')
+        script<-paste(script,'psscale ${clrbarloc} -Cclrs.cpt -Ba${zstride1}f${zstride2}:" ":/:"${zunits}": -N -O -K >> ${postfile}',sep='\n')
+        script<-paste(script,'echo 0 0 14 90 4 MC ${zlab}|pstext -R0/1/0/1 -JX1i -G0 -N -Xa6.8i -Ya1i -O -K >> ${postfile}',sep='\n')
     }
     
     #Add title and close ps file
     if (plt_title){ 
         script<-paste(script,"\n","#--ADD TITLE & CLOSE FILE",sep='\n')
-        script<-paste(script,'echo  6.0  ${ymx}  20 0 4 MR ${spplabel}|pstext -R0/1/0/1/ -JX1i -G0 -N -O >> ${postfile}',sep='\n')
+        script<-paste(script,'echo  6.0  ${ymx}  20 0 4 MR "${title}"|pstext -R0/1/0/1/ -JX1i -G0   -N -O >> ${postfile}',sep='\n')
     } else {
         script<-paste(script,"\n","#--ADD NO TITLE & CLOSE FILE",sep='\n')
-        script<-paste(script,'echo  6.0  ${ymx}  20 0 4 MR o|pstext          -R0/1/0/1/ -JX1i -G255   -N -O >> ${postfile}',sep='\n')
+        script<-paste(script,'echo  6.0  ${ymx}  20 0 4 MR o|pstext          -R0/1/0/1/ -JX1i -G255 -N -O >> ${postfile}',sep='\n')
     }
     
-    #convert ps file to PNG and PDF formats [-Tg, -Tf]
-    script<-paste(script,"\n","#--convert ps file to PNG and PDF formats",sep='\n')
-#    script<-paste(script,"ps2raster ${postfile} -A -S -Tg",sep='\n')
-    script<-paste(script,"ps2raster ${postfile} -A -S -Tf",sep='\n')
+#     #convert ps file to PNG and PDF formats [-Tg, -Tf]
+#     script<-paste(script,"\n","#--convert ps file to PNG and PDF formats",sep='\n')
+# #    script<-paste(script,"ps2raster ${postfile} -A -S -Tg",sep='\n')
+#     script<-paste(script,"ps2raster ${postfile} -A -S -Tf",sep='\n')
 
     #clean up temporary files
     if (cleanup){
         script<-paste(script,"\n","#--CLEAN UP",sep='\n')
-        script<-paste(script,'rm -f tmpcpue.txt',sep='\n')
         script<-paste(script,'rm -f tmp.xyg',sep='\n')
         script<-paste(script,'rm -f tmp1.xyg',sep='\n')
         script<-paste(script,'rm -f tmp1.grd',sep='\n')
         script<-paste(script,'rm -f tmplocs.txt',sep='\n')
         script<-paste(script,'rm -f tmplocs1.txt',sep='\n')
         script<-paste(script,'rm -f reflines.txt',sep='\n')
-        script<-paste(script,"rm -f ${postfile}",sep='\n')
+#        script<-paste(script,"rm -f ${postfile}",sep='\n')
         script<-paste(script,'rm -f clrs.cpt',sep='\n')
         script<-paste(script,'rm -f .gmtcommands4',sep='\n')
         script<-paste(script,'rm -f .gmtdefaults4',sep='\n')
     }
-    
-    #make substitutions
-    script<-gsub('${z10}',as.character(z10),script,fixed=TRUE);
 
     return(script);
 }
