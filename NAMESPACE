@@ -1,6 +1,6 @@
 export(calcZScale)
-export(createPDFfromEPS)
-export(createPDFfromPS)
+export(createPDF.fromEPS)
+export(createPDF.fromPS)
 export(createPlotScript.GMT4)
 export(createPlotScript.GMT5)
 export(gridCSV)

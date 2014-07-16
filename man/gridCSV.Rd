@@ -1,6 +1,6 @@
 \name{gridCSV}
 \alias{gridCSV}
-\title{Grid a dataframe (or csv file) using GMT.}
+\title{Grid a dataframe (or csv file) using GMT 4.5.}
 \usage{
 gridCSV(dfr = NULL, lat = "latitude", lon = "longitude", col = NULL,
   logtr = FALSE, xyrng = "180/205/54/62", delx = 0.5, dely = 0.25,
@@ -41,9 +41,21 @@ dataframe with the gridded values as column names
 'lon','lat', and col.
 }
 \description{
-Function to grid a dataframe or csv file using GMT.
+Function to grid a dataframe or csv file using GMT 4.5.
 }
 \details{
 
+
+Input dataframe is processed using GMT 4.5's 'blockmean'
+function using center coordinates for the output blocks as
+intermediate locations. These coordinates are then shifted
+by 0.5*cell width in the x and y directions so that the
+cell locations correspond to a pixel-registered grid.
+Converting the result to a grid using GMT 4.5's xyz2grd
+with pixel registration turned on (using -F) results in the
+expected behavior.
+
+* note that an intermediate file 'tmp.xyg' is created and
+deleted during this process
 }
 

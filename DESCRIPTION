@@ -8,4 +8,5 @@ Maintainer: William T. Stockhausen <william.stockhausen@noaa.gov>
 Description: Provides a set of functions for creating maps with GMT.
 License: MIT
 Imports:
+    wtsPlotUtils,
     wtsUtilities

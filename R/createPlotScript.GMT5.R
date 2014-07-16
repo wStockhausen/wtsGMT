@@ -4,8 +4,8 @@
 #'@description A function to create a shell script for GMT 4.5 to plot a dataframe or csv file on a map.
 #'
 #'@details 
-#' External Requirements:\n
-#'   --GMT 5.1.x ---DOESN'T WORK!!
+#' External Requirements:
+#'   * GMT 5.1.x ---DOESN'T WORK!!
 #'
 #' @param   z1   = scale for z axis
 #' @param   delx = x increment for associated grids

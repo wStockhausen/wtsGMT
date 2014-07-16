@@ -1,7 +1,16 @@
 #'
-#'@title Grid a dataframe (or csv file) using GMT.
+#'@title Grid a dataframe (or csv file) using GMT 4.5.
 #'
-#'@description Function to grid a dataframe or csv file using GMT.
+#'@description Function to grid a dataframe or csv file using GMT 4.5.
+#'
+#'@details
+#'Input dataframe is processed using GMT 4.5's 'blockmean' function using center coordinates for the
+#'output blocks as intermediate locations. These coordinates are then shifted by 0.5*cell width
+#'in the x and y directions so that the cell locations correspond to a pixel-registered grid. Converting
+#'the result to a grid using GMT 4.5's xyz2grd with pixel registration turned on (using -F) results
+#'in the expected behavior.
+#'
+#'* note that an intermediate file 'tmp.xyg' is created and deleted during this process
 #'
 #'@param dfr - the dataframe to grid
 #'@param lat - column name containing latitude coordinates
@@ -98,7 +107,10 @@ gridCSV<-function(dfr=NULL,
                    set,"blocktype=",blktyp,"\n",
                    sep='')
     
-    script<-paste('blockmean "',xyzFile,'" ${rngxy} ${xyblksz} -C -F ${blocktype} > ',tmpGrid, sep='');
+    #calculate block means/sums w/ locations at block centers
+    script<-paste('blockmean "',xyzFile,'" ${rngxy} ${xyblksz} -C ${blocktype} > tmp.xyg', sep='');
+    #shift cell locations so they correspond to pixel centers
+    script<-paste(script,paste("gawk '{print $1+",delx/2,", $2+",dely/2,", $3}' tmp.xyg > ",tmpGrid,sep=''),sep='\n')
     
     cat(shll,'\n',
         setenvs,'\n',
@@ -113,9 +125,10 @@ gridCSV<-function(dfr=NULL,
     dfr2<-read.table(tmpGrid,header=FALSE,sep="",col.names=c("lon","lat",col))
     
     if (cleanup){
-        file.remove(batfile)
-        file.remove(xyzFile)
-        file.remove(tmpGrid)
+        file.remove(batfile);
+        file.remove(xyzFile);
+        file.remove(tmpGrid);
+        file.remove(tmp.xyg);
     }
     
     return(dfr2)
