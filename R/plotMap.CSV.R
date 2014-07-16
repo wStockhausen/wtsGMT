@@ -206,7 +206,7 @@ plotMap.CSV<-function(dfr=NULL,
         plt_bars<-FALSE;#can't plot bars because elevation is effectively 90
     } else {
         if (is.logical(rotate)) {rotate<-180;} #rotate was TRUE, so set to 180
-        rngxyz<-paste(rngxy,'/0/',zscl,sep='');
+        rngxyz<-paste(rngxy,'/0/',zscale,sep='');
         ymx<-3.65;
         axs<-"wESn";
         if (gmt==4){

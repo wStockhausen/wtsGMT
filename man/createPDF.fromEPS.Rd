@@ -1,8 +1,8 @@
-\name{createPDFfromEPS}
-\alias{createPDFfromEPS}
+\name{createPDF.fromEPS}
+\alias{createPDF.fromEPS}
 \title{Create a pdf from a set of encapsulated postscript files.}
 \usage{
-createPDFfromEPS(pdfFile, epsFiles)
+createPDF.fromEPS(pdfFile, epsFiles)
 }
 \arguments{
   \item{pdfFile}{- path to output pdf file}
@@ -16,10 +16,12 @@ postscript files.
 \details{
 
 
-On Windows, this function creates a batch file
+* On Windows, this function creates a batch file
 ('runEPStoPDF1bat') that calls the GhostScript executable
 'gswin64c' and runs it. The environment variable
 GhostScript_HOME should point to the top GhostScript
-folder.\n \n On Mac OSX, ??.
+folder.
+
+* On Mac OSX, ??.
 }
 

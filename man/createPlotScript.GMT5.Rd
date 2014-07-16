@@ -47,6 +47,6 @@ dataframe or csv file on a map.
 \details{
 
 
-External Requirements:\n --GMT 5.1.x ---DOESN'T WORK!!
+External Requirements: * GMT 5.1.x ---DOESN'T WORK!!
 }
 

@@ -48,6 +48,6 @@ dataframe or csv file on a map.
 \details{
 
 
-External Requirements:\n --GMT 4.5.x
+External Requirements: * GMT 4.5.x
 }
 

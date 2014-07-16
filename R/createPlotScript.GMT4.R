@@ -4,8 +4,8 @@
 #'@description A function to create a shell script for GMT 4.5 to plot a dataframe or csv file on a map.
 #'
 #'@details 
-#' External Requirements:\n
-#'   --GMT 4.5.x
+#' External Requirements:
+#'   * GMT 4.5.x
 #'
 #' @param   delx = x increment for associated grids
 #' @param   dely = y increment for associated grids
@@ -95,12 +95,12 @@ createPlotScript.GMT4<-function(delx=1,
     # Create gridded surface
     if (plt_surface) {
         script<-paste(script,"\n","#--GRID AND PLOT SURFACE",sep='\n')
-        # Create grid  {pixel registered [-r] and location at cell center [-C]} 
-        script<-paste(script,"blockmean ${infile}  ${rngxy} ${xyblksz} -C -F ${blocktype} > tmp.xyg",sep='\n')
+        # Calculate block means, with output locations at cell center [-C]
+        script<-paste(script,"blockmean ${infile}  ${rngxy} ${xyblksz} -C ${blocktype} > tmp.xyg",sep='\n')
         if (plt_blocktype[1]=='SMOOTH') {
-            #create surface
-            script<-paste(script,"surface tmp.xyg -Gtmp1.grd ${rngxy} -I0.1/0.1 -Ll0 -S2 -T0.5",sep='\n');
-            script<-paste(script,"grdview tmp1.grd ${rngxy} ${geotransform} ${rot3d} -Cclrs.cpt -S -Qi -O -K >> ${postfile}",sep='\n');
+            #create smooth surface
+            script<-paste(script,"surface tmp.xyg -Gtmp.grd ${rngxy} -I0.1/0.1 -Ll0 -S2 -T0.5",sep='\n');
+            script<-paste(script,"grdview tmp.grd ${rngxy} ${geotransform} ${rot3d} -Cclrs.cpt -S -Qi -O -K >> ${postfile}",sep='\n');
             #clip the surface
             script<-paste(script,"psmask tmp.xyg ${rngxyz} ${geotransform} ${rot3d} -G255 -I1 -N -V -O -K >> ${postfile}",sep='\n');
             #turn clipping off
@@ -108,10 +108,12 @@ createPlotScript.GMT4<-function(delx=1,
             #replot the basemap (w/out X,Y shift), as this may have been clipped
             script<-paste(script,"psbasemap ${rngxyz} ${geotransform} ${rot3d} ${mapscl} ${mapbndry} -O -K >> ${postfile}",sep='\n')
         } else if (plt_blocktype[1]=='COARSE') {
-            #create grid
-            script<-paste(script,"xyz2grd tmp.xyg -Gtmp1.grd ${rngxy} ${xyblksz} -F ",sep='\n');
+            #shift cell locations to pixel centers
+            script<-paste(script,paste("gawk '{print $1+",delx/2,", $2+",dely/2,", $3}' tmp.xyg > tmp1.xyg",sep=''),sep='\n')
+            #create coarse grid using pixel registration [-F]
+            script<-paste(script,"xyz2grd tmp.xyg -Gtmp.grd ${rngxy} ${xyblksz} -F ",sep='\n');
             # plot contour surface (use -Tso instead of -Ts to outline the tiles, as well color them
-            script<-paste(script,"grdview tmp1.grd ${rngxy} ${geotransform} ${rot3d} -Cclrs.cpt -Tsored -O -K >> ${postfile}",sep='\n');
+            script<-paste(script,"grdview tmp.grd ${rngxy} ${geotransform} ${rot3d} -Cclrs.cpt -Tsored -O -K >> ${postfile}",sep='\n');
         }
     }
 
@@ -133,7 +135,6 @@ createPlotScript.GMT4<-function(delx=1,
     if (plt_stations){
         script<-paste(script,"\n","#--PLOT STATIONS",sep='\n')
         script<-paste(script,"gawk '{print $1, $2, 0.0}' ${infile} > tmplocs.txt",sep='\n')
-#        script<-paste(script,"gawk -F, '{print $1, $2, 0.0}' ${infile} > tmplocs.txt",sep='\n')
         script<-paste(script,"psxyz tmplocs.txt ${rngxyz} ${geotransform} ${rot3d} -Ss0.01i -W2,red -O -K >> ${postfile}",sep='\n')
     }
     
@@ -141,7 +142,11 @@ createPlotScript.GMT4<-function(delx=1,
     #[notes: delimiter in tmp.xyg is whitespace, the default delimiter, so need for -F. ',' in print stmt substituted w/ the delimiter] 
     if (plt_blocklocations){
         script<-paste(script,"\n","#--PLOT BLOCK LOCATIONS",sep='\n')
-        script<-paste(script,"gawk '{print $1, $2, 0.0}' tmp.xyg > tmplocs1.txt",sep='\n')
+        if (plt_blocktype[1]=='SMOOTH') {
+            script<-paste(script,"gawk '{print $1, $2, 0.0}' tmp.xyg > tmplocs1.txt",sep='\n')
+        } else if (plt_blocktype[1]=='COARSE') {
+            script<-paste(script,"gawk '{print $1, $2, 0.0}' tmp1.xyg > tmplocs1.txt",sep='\n')
+        }
         script<-paste(script,'psxyz tmplocs1.txt ${rngxyz} ${geotransform} ${rot3d} -Sx0.1i -W2,blue -O -K >> ${postfile}',sep='\n')
     }
     
@@ -150,7 +155,7 @@ createPlotScript.GMT4<-function(delx=1,
         script<-paste(script,"\n","#--PLOT BARS",sep='\n')
         if (plt_blocktype[1]=='SMOOTH'){
             script<-paste(script,'psxyz "${infile}" ${rngxyz} ${geotransform} ${rot3d} -B//a${zstride1}f${zstride2}:"${zlab} (${zunits})":Z -JZ1.5i -Cclrs.cpt -So0.05i    -W -K -O >> ${postfile}',sep='\n')
-        } else {
+        } else if (plt_blocktype[1]=='COARSE'){
             script<-paste(script,paste("gawk '{print $1, $2, $3, $3,",delx,",",delx,"}' tmp.xyg > tmp1.xyg",sep=''),sep='\n')
             script<-paste(script,'psxyz tmp1.xyg ${rngxyz} ${geotransform} ${rot3d} -B//a${zstride1}f${zstride2}:"${zlab} (${zunits})":Z -JZ1.5i -Cclrs.cpt -Sou -W -K -O >> ${postfile}',sep='\n')
         }
@@ -187,7 +192,7 @@ createPlotScript.GMT4<-function(delx=1,
         script<-paste(script,"\n","#--CLEAN UP",sep='\n')
         script<-paste(script,'rm -f tmp.xyg',sep='\n')
         script<-paste(script,'rm -f tmp1.xyg',sep='\n')
-        script<-paste(script,'rm -f tmp1.grd',sep='\n')
+        script<-paste(script,'rm -f tmp.grd',sep='\n')
         script<-paste(script,'rm -f tmplocs.txt',sep='\n')
         script<-paste(script,'rm -f tmplocs1.txt',sep='\n')
         script<-paste(script,'rm -f reflines.txt',sep='\n')

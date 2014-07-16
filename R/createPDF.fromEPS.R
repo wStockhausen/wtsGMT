@@ -6,15 +6,16 @@
 #'@param pdfFile - path to output pdf file
 #'@param epsFiles - vector of paths to the input eps files
 #'
-#'@details On Windows, this function creates a batch file ('runEPStoPDF1bat')
+#'@details 
+#'* On Windows, this function creates a batch file ('runEPStoPDF1bat')
 #'that calls the GhostScript executable 'gswin64c' and runs it. The environment
-#'variable GhostScript_HOME should point to the top GhostScript folder.\n
-#'\n
-#'On Mac OSX, ??.
+#'variable GhostScript_HOME should point to the top GhostScript folder.
+#'
+#'* On Mac OSX, ??.
 #'
 #'@export
 #'
-createPDFfromEPS<-function(pdfFile,epsFiles){
+createPDF.fromEPS<-function(pdfFile,epsFiles){
   cat("Creating pdf file\n");
   outFile<-paste('"',pdfFile,'.pdf"',sep="");#add extension and surround with double quotes
   inpFiles<-paste('"',epsFiles,'"',sep="",collapse=" ");
