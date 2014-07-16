@@ -111,11 +111,7 @@ createPlotScript.GMT4<-function(delx=1,
             #shift cell locations to pixel centers
             script<-paste(script,paste("gawk '{print $1+",delx/2,", $2+",dely/2,", $3}' tmp.xyg > tmp1.xyg",sep=''),sep='\n')
             #create coarse grid using pixel registration [-F]
-<<<<<<< HEAD
             script<-paste(script,"xyz2grd tmp1.xyg -Gtmp.grd ${rngxy} ${xyblksz} -F ",sep='\n');
-=======
-            script<-paste(script,"xyz2grd tmp.xyg -Gtmp.grd ${rngxy} ${xyblksz} -F ",sep='\n');
->>>>>>> ceea37a541127df2fe094e7e04d85597693edce0
             # plot contour surface (use -Tso instead of -Ts to outline the tiles, as well color them
             script<-paste(script,"grdview tmp.grd ${rngxy} ${geotransform} ${rot3d} -Cclrs.cpt -Tsored -O -K >> ${postfile}",sep='\n');
         }
