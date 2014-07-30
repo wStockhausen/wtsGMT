@@ -41,7 +41,7 @@
 #'
 #' @return z-scale used for plot.
 #' 
-#'@importFrom wtsPlotUtils computeTickInterval
+#'@importFrom wtsUtilities computeTickInterval
 #'@importFrom wtsUtilities getOperatingSystem
 #'@importFrom wtsUtilities getCSV
 #' 
@@ -143,7 +143,7 @@ plotMap.CSV<-function(dfr=NULL,
     
     #z axis information
     zinc  <-zscale/100;                                     #increment for color scale
-    zstride1<-wtsPlotUtils::computeTickInterval(zscale,1);  #major tick interval
+    zstride1<-wtsUtilities::computeTickInterval(zscale,1);  #major tick interval
     zstride2<-zstride1/5;                                   #minor tick interval
     
     xyzfile<-file.path(getwd(),'tmp_xyzvals.txt');
