@@ -5,6 +5,7 @@
 #'
 #'@param pdfFile - path to output pdf file
 #'@param psFiles - vector of paths to the input postscript files
+#'@param shFile  - file name for temporary shell script file (will be deleted when function ends)
 #'
 #'@details
 #'This function creates and runs a shell script that uses Ghostscript's gs function.
@@ -27,7 +28,7 @@ createPDF.fromPS<-function(pdfFile,
   cmdstr<-paste(cmdstr," -sDEVICE=pdfwrite -c .setpdfwrite -f ",inpFiles,sep="");
   cat(cmdstr,'\n',file=shFile,sep='');
   system(paste('/bin/bash ',shFile,sep=''));
-#  file.remove(shFile);
+  file.remove(shFile);
   cat("Finished creating pdf file\n");
 }
 
