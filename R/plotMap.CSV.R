@@ -8,6 +8,8 @@
 #'   * GMT 4.5.x
 #'   * on Windows, need both gswin32c and gswin64c installed
 #'   * on network, need to use mapped drives to specify files
+#'\cr
+#'Z-values > zscl are truncated to zscl so they will plot (otherwise GMT removes them completely, apparently)
 #'
 #' @param   dfr       = dataframe or csv file to plot
 #' @param   lat = column name containing latitudes
@@ -129,14 +131,20 @@ plotMap.CSV<-function(dfr=NULL,
         if (plt_surface) vls<-c(vls,dfr1p$z1);
         zscl<-calcZScale(vls,logtr=logtr);#z-scale in (possibly transformed) data units 
     }    
+    
+    #z values > zscl appear to be removed in GMT (not even just clipped), so
+    #need to truncate values to zscl
     if (logtr){
+        idx<-(log(dfr1$z1+1)/log(10)<=zscl)
+        dfr1$z1<-log(dfr1$z1+1)/log(10)*idx+zscl(!idx);#z log10 transformed (not ln)
         zscale<-zscl;
-        dfr1[["z1"]]<-log(dfr1$z1+1)/log(10);#z log10 transformed (not ln)
         zunits<-paste('log@-10@-(',zunits,'+1)',sep='');
     } else {
+        idx<-(dfr1$z1<=zscl)
+        dfr1$z1<-dfr1$z1*idx+zscl*(!idx)
         z10<-floor(log(zscl)/log(10)); #z-scale normalization factor for factor of 10 scaling
         zscale<-zscl/(10^z10);         #z-scale normalized by factor for factor of 10 scaling
-        dfr1[["z1"]]<-dfr1$z1/(10^z10);#z normalized by factor for factor of 10 scaling
+        dfr1$z1<-dfr1$z1/(10^z10);#z normalized by factor for factor of 10 scaling
         zunits<-paste('10@+',z10,'@+ ',zunits,sep='');
     }
     dfr1[["z2"]]<-dfr1[["z1"]];

@@ -69,6 +69,7 @@ createPlotScript.GMT4<-function(delx=1,
     #      export  paper media for EPS file (appended "+")
     script<-paste(script,"\n","#--PLOT FORMAT DEFAULTS",sep='\n')
     script<-paste(script,"gmtset PAPER_MEDIA Custom_612x400",sep='\n')
+    script<-paste(script,"gmtset COLOR_FOREGROUND 255/0/0",sep='\n')
     script<-paste(script,"gmtset BASEMAP_TYPE fancy PAGE_ORIENTATION portrait X_ORIGIN 1 X_ORIGIN 1",sep='\n')
     script<-paste(script,"gmtset ANNOT_FONT_SIZE 12p ANNOT_FONT_SIZE_SECONDARY 14p HEADER_FONT_SIZE 24p LABEL_FONT_SIZE 14p",sep='\n')
     script<-paste(script,"gmtset FRAME_WIDTH 0.075 PLOT_DEGREE_FORMAT DF OUTPUT_DEGREE_FORMAT D",sep='\n')
@@ -90,7 +91,7 @@ createPlotScript.GMT4<-function(delx=1,
     
     # Make a color palette table
     script<-paste(script,"\n","#--MAKE COLOR PALETTE",sep='\n')
-    script<-paste(script,"makecpt -Cseis -T0/${zscale}/${zinc} -I -Z > clrs.cpt",sep='\n')
+    script<-paste(script,"makecpt -Cseis -T0/${zscale}/${zinc} -I -Z -D > clrs.cpt",sep='\n')
         
     # Create gridded surface
     if (plt_surface) {
