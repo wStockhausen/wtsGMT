@@ -9,6 +9,8 @@
 #'
 #'@return the scale to be used for plotting z
 #'
+#'@details none.
+#'
 #'@export
 #'      
 calcZScale<-function(z,logtr=FALSE,satfac=1.1){

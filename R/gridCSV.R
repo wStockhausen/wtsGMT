@@ -48,7 +48,7 @@ gridCSV<-function(dfr=NULL,
     #check the operating platform
     MacOSX<-'MacOSX';
     Windws<-'Windows';
-    platform<-wtsUtilities::getOperatingSystem();
+    platform<-getOperatingSystem();
     
     #check for unc paths
     if (platform=='Windows'){
@@ -65,7 +65,7 @@ gridCSV<-function(dfr=NULL,
     if (!is.data.frame(dfr)){
         #read in table from csv file
         if (is.null(dfr)) {
-            dfr = wtsUtilities::getCSV(caption="Select csv file to grid");
+            dfr = getCSV(caption="Select csv file to grid");
             if (is.null(dfr)) return(NULL);
         } else {
             cat('\nRead csv file "',dfr,'"\n\n');

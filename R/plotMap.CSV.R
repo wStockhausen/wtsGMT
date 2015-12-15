@@ -103,7 +103,7 @@ plotMap.CSV<-function(dfr=NULL,
     if (!is.data.frame(dfr)){
         #read in table from csv file
       if (is.null(dfr)) {
-        dfr = wtsUtilities::getCSV(caption="Select csv file to plot");
+        dfr = getCSV(caption="Select csv file to plot");
         if (is.null(dfr)) return(NULL);
       } else {
         dfr<-read.csv(dfr,stringsAsFactors=FALSE);
@@ -150,9 +150,9 @@ plotMap.CSV<-function(dfr=NULL,
     dfr1[["z2"]]<-dfr1[["z1"]];
     
     #z axis information
-    zinc  <-zscale/100;                                     #increment for color scale
-    zstride1<-wtsUtilities::computeTickInterval(zscale,1);  #major tick interval
-    zstride2<-zstride1/5;                                   #minor tick interval
+    zinc  <-zscale/100;                       #increment for color scale
+    zstride1<-computeTickInterval(zscale,1);  #major tick interval
+    zstride2<-zstride1/5;                     #minor tick interval
     
     xyzfile<-file.path(getwd(),'tmp_xyzvals.txt');
     write.table(dfr1,
