@@ -293,6 +293,10 @@ plotMap.CSV<-function(dfr=NULL,
     
     cat("Finished running GMT portion\n");
     
+    if (toPDF){
+        createPDF.fromPS(psFile,psFiles=paste0(psFile,".ps"));
+    }
+    
     cat('\nzscale used for plots was ',zscl,'\n\n\n');
     if (retDFR) return(invisible(list(dfr=dfr,zscl=zscl)));
     return(invisible(zscl));
